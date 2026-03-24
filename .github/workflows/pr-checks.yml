@@ -1,0 +1,35 @@
+name: Pull Request
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  pr-checks:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Check PR title
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const title = context.payload.pull_request.title;
+          const validPrefixes = ['[FEAT]', '[FIX]', '[DOCS]', '[REFACTOR]', '[TEST]', '[CHORE]'];
+          const isValid = validPrefixes.some(prefix => title.startsWith(prefix));
+          
+          if (!isValid) {
+            core.setFailed(`PR title must start with one of: ${validPrefixes.join(', ')}`);
+          }
+    
+    - name: Check if CHANGELOG updated
+      run: |
+        if git diff origin/main HEAD --name-only | grep -q "CHANGELOG"; then
+          echo "✓ CHANGELOG has been updated"
+        else
+          echo " Consider updating CHANGELOG.md"
+        fi
+
